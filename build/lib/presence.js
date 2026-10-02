@@ -65,11 +65,30 @@ class PresenceTracker {
     this.graceMs = graceMs;
   }
   lastSeen = /* @__PURE__ */ new Map();
+  lastIp = /* @__PURE__ */ new Map();
   /** Restores a last-seen time from a previous run so a restart does not flip everyone to absent. */
-  seed(mac, lastSeen) {
+  seed(mac, lastSeen, ip) {
     if (Number.isFinite(lastSeen) && lastSeen > 0 && !this.lastSeen.has(mac)) {
       this.lastSeen.set(mac, lastSeen);
     }
+    if (ip && !this.lastIp.has(mac)) {
+      this.lastIp.set(mac, ip);
+    }
+  }
+  /** Remembers the address a device was last seen with, so it can be probed after its ARP entry is gone. */
+  noteIp(mac, ip) {
+    if (ip) {
+      this.lastIp.set(mac, ip);
+    }
+  }
+  /** Last known address of a device. */
+  ipOf(mac) {
+    return this.lastIp.get(mac);
+  }
+  /** Present only thanks to the grace period: seen before, not seen at `now`. */
+  inGrace(mac, now) {
+    const seen = this.lastSeen.get(mac);
+    return seen !== void 0 && seen < now && now - seen <= this.graceMs;
   }
   /** Records a poll result and returns the debounced presence. */
   update(mac, onlineNow, now) {

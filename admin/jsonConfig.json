@@ -349,6 +349,17 @@
                     "lg": 4,
                     "xl": 4
                 },
+                "presenceProbe": {
+                    "type": "checkbox",
+                    "label": "Probe presence devices before reporting them away",
+                    "help": "probeHelp",
+                    "disabled": "!data.enableNetwork",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
                 "presenceDevices": {
                     "type": "table",
                     "label": "Presence devices",

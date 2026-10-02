@@ -93,12 +93,18 @@ you can limit the rules to the ones you tagged, for example with `[iob]` in thei
 - **Create a device for every host seen** adds a device for every MAC the firewall knows. Names you give these devices in the
   objects view are kept.
 - **Keep present after last sighting** avoids false "away" events when a phone sleeps for a moment.
+- **Probe presence devices before reporting them away** (on by default): when a device on the presence list is no longer
+  seen, the firewall pings its last address once per network poll during the grace period. A device that is still there
+  answers (at least the firewall's ARP request, even if it ignores pings) and stays present. A ping to a device that has
+  left takes about 11 seconds, so at most three devices are probed per poll. Needs the `api-v2-diagnostics-ping-post`
+  privilege and a grace period longer than the network poll interval.
 
 `leaseEnds` assumes pfSense's default of showing lease times in UTC; if "Change DHCP display lease time from UTC to local
 time" is ticked in the DHCP server settings, the value is off by the firewall's UTC offset.
 
 A device counts as seen when it has an ARP entry on the firewall or its DHCP lease is reported online. FreeBSD keeps ARP
-entries for up to 20 minutes, so a device that leaves can take that long to be reported absent.
+entries for up to 20 minutes, so a device that leaves can take that long to be reported absent. A device that comes back
+is seen as soon as it sends traffic through the firewall (phones and laptops do so immediately; a silent server may not).
 
 ### Control
 

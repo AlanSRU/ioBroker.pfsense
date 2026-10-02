@@ -203,10 +203,11 @@ class Pfsense extends utils.Adapter {
     private async restorePresence(): Promise<void> {
         for (const key of this.writer.childKeys('devices')) {
             const st = await this.getStateAsync(`devices.${key}.lastSeen`);
+            const ip = await this.getStateAsync(`devices.${key}.ip`);
             const obj = await this.getObjectAsync(`devices.${key}`);
             const mac = normalizeMac(obj?.native?.mac);
             if (mac && typeof st?.val === 'number') {
-                this.presence.seed(mac, st.val);
+                this.presence.seed(mac, st.val, typeof ip?.val === 'string' ? ip.val : undefined);
             }
         }
     }
@@ -252,6 +253,7 @@ class Pfsense extends utils.Adapter {
                     watched: s.watched,
                     trackAll: s.trackAllHosts,
                     tracker: this.presence,
+                    probe: s.presenceProbe ? ip => this.probeHost(ip) : undefined,
                 });
                 if (r) {
                     this.wake = r.wake;
@@ -692,6 +694,29 @@ class Pfsense extends utils.Adapter {
 
     private async applyFirewall(): Promise<void> {
         await this.call(c => c.post('/api/v2/firewall/apply', {}));
+    }
+
+    /** Has the firewall ping a host once; a reply, or just the ARP exchange it causes, reveals a quiet device. */
+    private async probeHost(ip: string): Promise<boolean> {
+        try {
+            // A device that drops pings still answers the ARP request this causes, so the ARP read that follows
+            // finds it even when the ping itself times out.
+            const r = await this.call(c =>
+                c.post<{ result_code?: number }>('/api/v2/diagnostics/ping', { host: ip, count: 1 }),
+            );
+            return r?.result_code === 0;
+        } catch (err) {
+            if (err instanceof ApiError && err.kind === 'forbidden') {
+                this.logOnce(
+                    'probe:forbidden',
+                    'warn',
+                    'Presence probing needs the api-v2-diagnostics-ping-post privilege; without it quiet devices may be reported away.',
+                );
+            } else {
+                this.log.debug(`Probing ${ip} failed: ${errorMessage(err)}`);
+            }
+            return false;
+        }
     }
 
     private async wakeOnLan(mac: string, iface?: string): Promise<void> {

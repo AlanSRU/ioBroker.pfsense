@@ -18,6 +18,7 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var features_exports = {};
 __export(features_exports, {
+  MAX_PROBES_PER_POLL: () => MAX_PROBES_PER_POLL,
   button: () => button,
   configuredMacs: () => configuredMacs,
   interfaceIdMap: () => interfaceIdMap,
@@ -259,6 +260,7 @@ async function pollServices(ctx, allowControl) {
   await w.removeStale("services", index.keys());
   return index;
 }
+const MAX_PROBES_PER_POLL = 3;
 function interfaceIdMap(list) {
   const m = /* @__PURE__ */ new Map();
   for (const i of list) {
@@ -275,16 +277,46 @@ function interfaceIdMap(list) {
   return m;
 }
 async function pollNetwork(ctx, opts) {
-  var _a;
+  var _a, _b, _c;
   const { w } = ctx;
   const leases = await ctx.fetch("/api/v2/status/dhcp_server/leases");
-  const arp = await ctx.fetch("/api/v2/diagnostics/arp_table");
+  let arp = await ctx.fetch("/api/v2/diagnostics/arp_table");
   if (!Array.isArray(leases) && !Array.isArray(arp)) {
     return void 0;
   }
   const ifaces = Array.isArray(arp) && arp.length ? await ctx.fetch("/api/v2/status/interfaces") : void 0;
   const ifaceIds = interfaceIdMap(Array.isArray(ifaces) ? ifaces : []);
-  const sightings = (0, import_presence.collectSightings)(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : [], ifaceIds);
+  let sightings = (0, import_presence.collectSightings)(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : [], ifaceIds);
+  if (opts.probe) {
+    const candidates = opts.watched.filter((d) => {
+      var _a2;
+      return d.enabled && !((_a2 = sightings.get(d.mac)) == null ? void 0 : _a2.online) && opts.tracker.inGrace(d.mac, ctx.now);
+    }).map((d) => {
+      var _a2, _b2;
+      return { mac: d.mac, ip: (_b2 = (_a2 = sightings.get(d.mac)) == null ? void 0 : _a2.ip) != null ? _b2 : opts.tracker.ipOf(d.mac) };
+    }).filter((c) => !!c.ip).slice(0, MAX_PROBES_PER_POLL);
+    const replied = /* @__PURE__ */ new Set();
+    for (const c of candidates) {
+      if (await opts.probe(c.ip)) {
+        replied.add(c.mac);
+      }
+    }
+    if (candidates.length) {
+      const again = await ctx.fetch("/api/v2/diagnostics/arp_table");
+      if (Array.isArray(again)) {
+        arp = again;
+      }
+      sightings = (0, import_presence.collectSightings)(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : [], ifaceIds);
+      for (const mac of replied) {
+        const s = (_b = sightings.get(mac)) != null ? _b : { mac, online: false, ip: (_a = candidates.find((c) => c.mac === mac)) == null ? void 0 : _a.ip };
+        s.online = true;
+        sightings.set(mac, s);
+      }
+    }
+  }
+  for (const s of sightings.values()) {
+    opts.tracker.noteIp(s.mac, s.ip);
+  }
   const all = [...sightings.values()].sort((a, b) => a.mac.localeCompare(b.mac));
   await w.folder("network", "Network");
   if (Array.isArray(leases)) {
@@ -319,7 +351,7 @@ async function pollNetwork(ctx, opts) {
   }
   for (const [mac, d] of devices) {
     const s = sightings.get(mac);
-    const iface = d.interface && ((_a = ifaceIds.get(d.interface.toLowerCase())) != null ? _a : d.interface) || (s == null ? void 0 : s.interface) || "";
+    const iface = d.interface && ((_c = ifaceIds.get(d.interface.toLowerCase())) != null ? _c : d.interface) || (s == null ? void 0 : s.interface) || "";
     if (iface) {
       wake.set(mac, iface);
     }
@@ -662,6 +694,7 @@ async function pollFirewallPending(ctx) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  MAX_PROBES_PER_POLL,
   button,
   configuredMacs,
   interfaceIdMap,

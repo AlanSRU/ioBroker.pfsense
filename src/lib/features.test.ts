@@ -305,6 +305,93 @@ describe('features', () => {
             expect(fa.states.get('services.openvpn_OpenVPN_server_Road_Warrior.running')).to.equal(true);
         });
 
+        describe('presence probing', () => {
+            const MAC = 'aa:bb:cc:00:00:01';
+            const opts = (tracker: PresenceTracker, probe?: (ip: string) => Promise<boolean>): F.PresenceOptions => ({
+                watched: F.parseWatched([{ enabled: true, name: 'Phone', mac: MAC, interface: 'lan' }]),
+                trackAll: false,
+                tracker,
+                probe,
+            });
+            const quiet = (): Record<string, unknown> => {
+                const d = fixtureData();
+                d['/api/v2/status/dhcp_server/leases'] = [];
+                d['/api/v2/diagnostics/arp_table'] = [];
+                return d;
+            };
+
+            it('probes a device in its grace period and keeps it present when it answers', async () => {
+                const fa = new FakeAdapter();
+                const tracker = new PresenceTracker(120_000);
+                await F.pollNetwork(ctxFor(fa, fixtureData(), 0), opts(tracker));
+                const probed: string[] = [];
+                await F.pollNetwork(
+                    ctxFor(fa, quiet(), 60_000),
+                    opts(tracker, ip => {
+                        probed.push(ip);
+                        return Promise.resolve(true);
+                    }),
+                );
+                expect(probed).to.deep.equal(['10.9.0.100']);
+                expect(fa.states.get('devices.aa_bb_cc_00_00_01.present')).to.equal(true);
+                expect(fa.states.get('devices.aa_bb_cc_00_00_01.lastSeen')).to.equal(60_000);
+            });
+
+            it('reports the device away once the grace period ends without an answer', async () => {
+                const fa = new FakeAdapter();
+                const tracker = new PresenceTracker(120_000);
+                await F.pollNetwork(ctxFor(fa, fixtureData(), 0), opts(tracker));
+                const probe = (): Promise<boolean> => Promise.resolve(false);
+                await F.pollNetwork(ctxFor(fa, quiet(), 60_000), opts(tracker, probe));
+                expect(fa.states.get('devices.aa_bb_cc_00_00_01.present')).to.equal(true);
+                let calls = 0;
+                await F.pollNetwork(
+                    ctxFor(fa, quiet(), 200_000),
+                    opts(tracker, () => {
+                        calls++;
+                        return Promise.resolve(false);
+                    }),
+                );
+                expect(fa.states.get('devices.aa_bb_cc_00_00_01.present')).to.equal(false);
+                expect(calls, 'no probe once the device is away').to.equal(0);
+            });
+
+            it('does not probe devices that are seen, and probes at most a few per poll', async () => {
+                const tracker = new PresenceTracker(120_000);
+                const many = F.parseWatched(
+                    Array.from({ length: 6 }, (_, i) => ({
+                        enabled: true,
+                        name: `d${i}`,
+                        mac: `02:00:00:00:00:0${i}`,
+                    })),
+                );
+                for (const d of many) {
+                    tracker.seed(d.mac, 1, `10.0.0.${10 + Number(d.mac.slice(-1))}`);
+                }
+                let calls = 0;
+                const fa = new FakeAdapter();
+                await F.pollNetwork(ctxFor(fa, fixtureData(), 50_000), {
+                    watched: many,
+                    trackAll: false,
+                    tracker,
+                    probe: () => {
+                        calls++;
+                        return Promise.resolve(false);
+                    },
+                });
+                expect(calls).to.equal(F.MAX_PROBES_PER_POLL);
+                let seenCalls = 0;
+                await F.pollNetwork(
+                    ctxFor(fa, fixtureData(), 60_000),
+                    opts(new PresenceTracker(120_000), () => {
+                        seenCalls++;
+                        return Promise.resolve(true);
+                    }),
+                );
+                expect(seenCalls, 'device online in ARP is not probed').to.equal(0);
+            });
+        });
+
         it('creates no service buttons when control is off', async () => {
             const fa = new FakeAdapter();
             await F.pollServices(ctxFor(fa, fixtureData()), false);

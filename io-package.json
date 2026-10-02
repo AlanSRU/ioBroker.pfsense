@@ -110,6 +110,7 @@
         "enableNetwork": true,
         "trackAllHosts": false,
         "presenceGrace": 180,
+        "presenceProbe": true,
         "presenceDevices": [],
         "enableVpn": true,
         "enableCarp": true,

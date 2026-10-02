@@ -284,7 +284,15 @@ export interface PresenceOptions {
     watched: WatchedDevice[];
     trackAll: boolean;
     tracker: PresenceTracker;
+    /**
+     * Has the firewall ping an address; resolves true on a reply. Even a host that ignores pings answers the
+     * firewall's ARP request, so the next ARP read shows it. Undefined = probing off.
+     */
+    probe?: (ip: string) => Promise<boolean>;
 }
+
+/** Probes per network poll: a ping to a host that has left (or drops pings) blocks the API for about 11 s. */
+export const MAX_PROBES_PER_POLL = 3;
 
 /** What Wake-on-LAN needs: the pfSense interface a MAC was last seen on. */
 export type WakeIndex = Map<string, string>;
@@ -320,7 +328,7 @@ export async function pollNetwork(
 > {
     const { w } = ctx;
     const leases = await ctx.fetch<T.DhcpLease[]>('/api/v2/status/dhcp_server/leases');
-    const arp = await ctx.fetch<T.ArpEntry[]>('/api/v2/diagnostics/arp_table');
+    let arp = await ctx.fetch<T.ArpEntry[]>('/api/v2/diagnostics/arp_table');
     if (!Array.isArray(leases) && !Array.isArray(arp)) {
         return undefined;
     }
@@ -328,7 +336,38 @@ export async function pollNetwork(
     const ifaces =
         Array.isArray(arp) && arp.length ? await ctx.fetch<T.InterfaceStats[]>('/api/v2/status/interfaces') : undefined;
     const ifaceIds = interfaceIdMap(Array.isArray(ifaces) ? ifaces : []);
-    const sightings = collectSightings(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : [], ifaceIds);
+    let sightings = collectSightings(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : [], ifaceIds);
+
+    // A quiet device loses its ARP entry although it is still there. Before the grace period runs out,
+    // probe it: if it is present, the firewall learns its MAC again and it does not flap to "away".
+    if (opts.probe) {
+        const candidates = opts.watched
+            .filter(d => d.enabled && !sightings.get(d.mac)?.online && opts.tracker.inGrace(d.mac, ctx.now))
+            .map(d => ({ mac: d.mac, ip: sightings.get(d.mac)?.ip ?? opts.tracker.ipOf(d.mac) }))
+            .filter((c): c is { mac: string; ip: string } => !!c.ip)
+            .slice(0, MAX_PROBES_PER_POLL);
+        const replied = new Set<string>();
+        for (const c of candidates) {
+            if (await opts.probe(c.ip)) {
+                replied.add(c.mac);
+            }
+        }
+        if (candidates.length) {
+            const again = await ctx.fetch<T.ArpEntry[]>('/api/v2/diagnostics/arp_table');
+            if (Array.isArray(again)) {
+                arp = again;
+            }
+            sightings = collectSightings(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : [], ifaceIds);
+            for (const mac of replied) {
+                const s = sightings.get(mac) ?? { mac, online: false, ip: candidates.find(c => c.mac === mac)?.ip };
+                s.online = true;
+                sightings.set(mac, s);
+            }
+        }
+    }
+    for (const s of sightings.values()) {
+        opts.tracker.noteIp(s.mac, s.ip);
+    }
     const all = [...sightings.values()].sort((a, b) => a.mac.localeCompare(b.mac));
 
     await w.folder('network', 'Network');

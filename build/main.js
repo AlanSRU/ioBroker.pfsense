@@ -190,10 +190,11 @@ class Pfsense extends utils.Adapter {
     var _a;
     for (const key of this.writer.childKeys("devices")) {
       const st = await this.getStateAsync(`devices.${key}.lastSeen`);
+      const ip = await this.getStateAsync(`devices.${key}.ip`);
       const obj = await this.getObjectAsync(`devices.${key}`);
       const mac = (0, import_util.normalizeMac)((_a = obj == null ? void 0 : obj.native) == null ? void 0 : _a.mac);
       if (mac && typeof (st == null ? void 0 : st.val) === "number") {
-        this.presence.seed(mac, st.val);
+        this.presence.seed(mac, st.val, typeof (ip == null ? void 0 : ip.val) === "string" ? ip.val : void 0);
       }
     }
   }
@@ -235,7 +236,8 @@ class Pfsense extends utils.Adapter {
         const r = await F.pollNetwork(ctx, {
           watched: s.watched,
           trackAll: s.trackAllHosts,
-          tracker: this.presence
+          tracker: this.presence,
+          probe: s.presenceProbe ? (ip) => this.probeHost(ip) : void 0
         });
         if (r) {
           this.wake = r.wake;
@@ -629,6 +631,26 @@ class Pfsense extends utils.Adapter {
   }
   async applyFirewall() {
     await this.call((c) => c.post("/api/v2/firewall/apply", {}));
+  }
+  /** Has the firewall ping a host once; a reply, or just the ARP exchange it causes, reveals a quiet device. */
+  async probeHost(ip) {
+    try {
+      const r = await this.call(
+        (c) => c.post("/api/v2/diagnostics/ping", { host: ip, count: 1 })
+      );
+      return (r == null ? void 0 : r.result_code) === 0;
+    } catch (err) {
+      if (err instanceof import_client.ApiError && err.kind === "forbidden") {
+        this.logOnce(
+          "probe:forbidden",
+          "warn",
+          "Presence probing needs the api-v2-diagnostics-ping-post privilege; without it quiet devices may be reported away."
+        );
+      } else {
+        this.log.debug(`Probing ${ip} failed: ${(0, import_util.errorMessage)(err)}`);
+      }
+      return false;
+    }
   }
   async wakeOnLan(mac, iface) {
     var _a;

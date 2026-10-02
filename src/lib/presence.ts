@@ -73,15 +73,37 @@ export function collectSightings(
  */
 export class PresenceTracker {
     private readonly lastSeen = new Map<string, number>();
+    private readonly lastIp = new Map<string, string>();
 
     /** @param graceMs - how long a device stays present after it was last seen */
     public constructor(private readonly graceMs: number) {}
 
     /** Restores a last-seen time from a previous run so a restart does not flip everyone to absent. */
-    public seed(mac: string, lastSeen: number): void {
+    public seed(mac: string, lastSeen: number, ip?: string): void {
         if (Number.isFinite(lastSeen) && lastSeen > 0 && !this.lastSeen.has(mac)) {
             this.lastSeen.set(mac, lastSeen);
         }
+        if (ip && !this.lastIp.has(mac)) {
+            this.lastIp.set(mac, ip);
+        }
+    }
+
+    /** Remembers the address a device was last seen with, so it can be probed after its ARP entry is gone. */
+    public noteIp(mac: string, ip: string | undefined): void {
+        if (ip) {
+            this.lastIp.set(mac, ip);
+        }
+    }
+
+    /** Last known address of a device. */
+    public ipOf(mac: string): string | undefined {
+        return this.lastIp.get(mac);
+    }
+
+    /** Present only thanks to the grace period: seen before, not seen at `now`. */
+    public inGrace(mac: string, now: number): boolean {
+        const seen = this.lastSeen.get(mac);
+        return seen !== undefined && seen < now && now - seen <= this.graceMs;
     }
 
     /** Records a poll result and returns the debounced presence. */

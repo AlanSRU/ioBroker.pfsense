@@ -28,6 +28,7 @@ export interface Settings {
     serviceControl: boolean;
     network: boolean;
     trackAllHosts: boolean;
+    presenceProbe: boolean;
     presenceGraceMs: number;
     watched: WatchedDevice[];
     vpn: boolean;
@@ -124,6 +125,7 @@ export function parseSettings(raw: ioBroker.AdapterConfig | Record<string, unkno
             serviceControl: flag('allowServiceControl', true),
             network: flag('enableNetwork', true),
             trackAllHosts: flag('trackAllHosts', false),
+            presenceProbe: flag('presenceProbe', true),
             presenceGraceMs: lim(cfg, 'presenceGrace') * 1000,
             watched: parseWatched(cfg.presenceDevices),
             vpn: flag('enableVpn', true),

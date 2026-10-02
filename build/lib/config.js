@@ -111,6 +111,7 @@ function parseSettings(raw) {
       serviceControl: flag("allowServiceControl", true),
       network: flag("enableNetwork", true),
       trackAllHosts: flag("trackAllHosts", false),
+      presenceProbe: flag("presenceProbe", true),
       presenceGraceMs: lim(cfg, "presenceGrace") * 1e3,
       watched: (0, import_features.parseWatched)(cfg.presenceDevices),
       vpn: flag("enableVpn", true),
