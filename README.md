@@ -86,7 +86,8 @@ you can limit the rules to the ones you tagged, for example with `[iob]` in thei
 
 ### Network and presence
 
-- **Read DHCP leases and ARP table** fills the `network` channel with counts and a JSON host list.
+- **Read DHCP leases and ARP table** fills the `network` channel with counts and a JSON host list Both pfSense DHCP
+  backends (ISC and Kea) are supported.
 - **Presence devices**: one row per device you want to track, with a name, the MAC address and optionally the pfSense interface
   (`lan`, `opt1`, …) for Wake-on-LAN. Unticking **Active** pauses a device but keeps its objects (and their history settings);
   deleting the row removes them.
