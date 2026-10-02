@@ -208,6 +208,10 @@ the connection is back.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- (Alan Paris) Published through CI with npm provenance; Dependabot configuration for dependency updates
+
 ### 0.1.0 (2026-10-02)
 
 - (Alan Paris) Initial release: system, interfaces, gateways, services, DHCP/ARP host list and presence, OpenVPN,

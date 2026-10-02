@@ -3,31 +3,31 @@
     "name": "pfsense",
     "version": "0.1.0",
     "news": {
-      "0.1.0": {
-        "en": "* Initial release: system, interfaces, gateways, services, DHCP/ARP host list and presence, OpenVPN,\n  WireGuard, IPsec, CARP, firewall rules and aliases, Wake-on-LAN, optional reboot/shutdown",
-        "de": "* Erste Version: System, Interfaces, Dienste, DHCP/ARP-Hostliste und Präsenz, OpenVPN,\n  WireGuard, IPSec, CARP, Firewallregeln und Aliase, Wake-on-LAN, optional",
-        "ru": "* Первоначальная версия: система, интерфейсы, шлюзы, сервисы, список и присутствие хостов DHCP/ARP, OpenVPN,\n  WireGuard, IPsec, CARP, правила и псевдонимы брандмауэра, Wake-On-LAN, опциональная перезагрузка/выключение",
-        "pt": "* Versão inicial: sistema, interfaces, gateways, serviços, lista e presença DHCP/ARP, OpenVPN\n  WireGuard, IPsec, CARP, regras e aliases de firewall, Wake-on-LAN e desligamento opcionais",
-        "nl": "* Eerste versie: systeem, interfaces, gateways, services, DHCP/ARP-hostlijst en -aanwezigheid, OpenVPN,\n  WireGuard, IPsec, CARP, firewallregels en aliassen, Wake-on-LAN, optioneel herstarten/afsluiten",
-        "fr": "* Version initiale : système, interfaces, passerelles, services, liste et présence d'hôtes DHCP/ARP, OpenVPN,\n  WireGuard, IPsec, CARP, règles et alias du pare-feu, Wake-on-LAN, redémarrage/arrêt en option",
-        "it": "* Versione iniziale: sistema, interfacce, gateway, servizi, lista e presenza DHCP/ARP, OpenVPN\n  WireGuard, IPSec, CARP, regole e alias firewall, Wake-on-LAN, riavvio/arresto opzionale",
-        "es": "* Versión inicial: sistema, interfaces, puertas de enlace, servicios, lista y presencia de DHCP/ARP, OpenVPN,\n  WireGuard, IPsec, CARP, reglas y alias de firewall, Wake-on-LAN, reinicio/apagado opcional",
-        "pl": "* Pierwsza wersja: system, interfejsy, bramy, usługi, lista hostów DHCP/ARP i obecność, OpenVPN,\n  WireGuard, IPsec, CARP, reguły zapory i aliasy, Wake-on-LAN, opcjonalne ponowne uruchamianie/wyłączanie",
-        "uk": "* Початковий випуск: система, інтерфейси, шлюзи, послуги, список хостів DHCP/ARP та присутність, OpenVPN,\n  WireGuard, IPsec, CARP, правила брандмауера та псевдоніми, Wake-on-LAN, додаткове перезавантаження/вимкнення",
-        "zh-cn": "* 初始版本：系统、接口、网关、服务、DHCP/ARP 主机列表和状态、OpenVPN、\n  WireGuard、IPsec、CARP、防火墙规则和别名、局域网唤醒、可选重启/关闭"
+      "0.1.1": {
+        "en": "Published through CI with npm provenance; Dependabot configuration for dependency updates",
+        "de": "Veröffentlichung über CI mit npm-Provenienz; Dependabot-Konfiguration für Abhängigkeitsupdates",
+        "ru": "Публикация через CI с подтверждением происхождения npm; конфигурация Dependabot для обновления зависимостей",
+        "pt": "Publicado via CI com proveniência npm; configuração do Dependabot para atualizações de dependências",
+        "nl": "Gepubliceerd via CI met npm-herkomst; Dependabot-configuratie voor afhankelijkheidsupdates",
+        "fr": "Publié via CI avec provenance npm ; configuration Dependabot pour les mises à jour des dépendances",
+        "it": "Pubblicato tramite CI con provenienza npm; configurazione Dependabot per gli aggiornamenti delle dipendenze",
+        "es": "Publicado mediante CI con procedencia de npm; configuración de Dependabot para actualizaciones de dependencias",
+        "pl": "Publikacja przez CI z poświadczeniem pochodzenia npm; konfiguracja Dependabot do aktualizacji zależności",
+        "uk": "Публікація через CI з підтвердженням походження npm; конфігурація Dependabot для оновлення залежностей",
+        "zh-cn": "通过 CI 发布并附带 npm 来源证明；新增用于依赖更新的 Dependabot 配置"
       },
-      "0.0.1": {
-        "en": "initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Начальная версия",
-        "pt": "lançamento inicial",
-        "nl": "Eerste uitgave",
-        "fr": "Première version",
-        "it": "Versione iniziale",
-        "es": "Versión inicial",
-        "pl": "Pierwsze wydanie",
-        "uk": "Початкова версія",
-        "zh-cn": "首次出版"
+      "0.1.0": {
+        "en": "Initial release: system, interfaces, gateways, services, DHCP/ARP host list and presence, OpenVPN, WireGuard, IPsec, CARP, firewall rules and aliases, Wake-on-LAN, optional reboot/shutdown",
+        "de": "Erste Version: System, Schnittstellen, Gateways, Dienste, DHCP/ARP-Hostliste und Anwesenheit, OpenVPN, WireGuard, IPsec, CARP, Firewall-Regeln und Aliase, Wake-on-LAN, optional Neustart/Herunterfahren",
+        "ru": "Первоначальная версия: система, интерфейсы, шлюзы, сервисы, список и присутствие хостов DHCP/ARP, OpenVPN, WireGuard, IPsec, CARP, правила и псевдонимы брандмауэра, Wake-On-LAN, опциональная перезагрузка/выключение",
+        "pt": "Versão inicial: sistema, interfaces, gateways, serviços, lista de hosts DHCP/ARP e presença, OpenVPN, WireGuard, IPsec, CARP, regras e aliases de firewall, Wake-on-LAN, reinício/desligamento opcionais",
+        "nl": "Eerste versie: systeem, interfaces, gateways, services, DHCP/ARP-hostlijst en -aanwezigheid, OpenVPN, WireGuard, IPsec, CARP, firewallregels en aliassen, Wake-on-LAN, optioneel herstarten/afsluiten",
+        "fr": "Version initiale : système, interfaces, passerelles, services, liste et présence d'hôtes DHCP/ARP, OpenVPN, WireGuard, IPsec, CARP, règles et alias du pare-feu, Wake-on-LAN, redémarrage/arrêt en option",
+        "it": "Versione iniziale: sistema, interfacce, gateway, servizi, lista e presenza DHCP/ARP, OpenVPN, WireGuard, IPSec, CARP, regole e alias firewall, Wake-on-LAN, riavvio/arresto opzionale",
+        "es": "Versión inicial: sistema, interfaces, puertas de enlace, servicios, lista y presencia de DHCP/ARP, OpenVPN, WireGuard, IPsec, CARP, reglas y alias de firewall, Wake-on-LAN, reinicio/apagado opcional",
+        "pl": "Pierwsza wersja: system, interfejsy, bramy, usługi, lista hostów DHCP/ARP i obecność, OpenVPN, WireGuard, IPsec, CARP, reguły zapory i aliasy, Wake-on-LAN, opcjonalne ponowne uruchamianie/wyłączanie",
+        "uk": "Перший випуск: система, інтерфейси, шлюзи, служби, список хостів DHCP/ARP і присутність, OpenVPN, WireGuard, IPsec, CARP, правила та псевдоніми брандмауера, Wake-on-LAN, необов'язкове перезавантаження/вимкнення",
+        "zh-cn": "初始版本：系统、接口、网关、服务、DHCP/ARP 主机列表和状态、OpenVPN、WireGuard、IPsec、CARP、防火墙规则和别名、局域网唤醒、可选重启/关闭"
       }
     },
     "titleLang": {
