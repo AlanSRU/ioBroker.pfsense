@@ -182,6 +182,7 @@ async function pollInterfaces(ctx) {
 }
 const GATEWAY_DOWN = /down|offline/i;
 async function pollGateways(ctx) {
+  var _a;
   const { w } = ctx;
   const list = await ctx.fetch("/api/v2/status/gateways");
   if (!Array.isArray(list)) {
@@ -190,8 +191,8 @@ async function pollGateways(ctx) {
   await w.folder("gateways", "Gateways");
   const keys = [];
   for (const [key, g] of uniqueKeys(list, (g2) => {
-    var _a;
-    return (_a = g2.name) != null ? _a : "gateway";
+    var _a2;
+    return (_a2 = g2.name) != null ? _a2 : "gateway";
   })) {
     keys.push(key);
     const p = `gateways.${key}`;
@@ -204,8 +205,13 @@ async function pollGateways(ctx) {
       status === void 0 ? void 0 : !GATEWAY_DOWN.test(status)
     );
     await w.state(`${p}.substatus`, text("Sub-status"), (0, import_util.toStr)(g.substatus));
-    await w.state(`${p}.latency`, num("Latency", "ms"), (0, import_util.toNumber)(g.delay));
-    await w.state(`${p}.latencyStdDev`, num("Latency standard deviation", "ms"), (0, import_util.toNumber)(g.stddev));
+    const measured = ((_a = (0, import_util.toNumber)(g.loss)) != null ? _a : 0) < 100;
+    await w.state(`${p}.latency`, num("Latency", "ms"), measured ? (0, import_util.toNumber)(g.delay) : void 0);
+    await w.state(
+      `${p}.latencyStdDev`,
+      num("Latency standard deviation", "ms"),
+      measured ? (0, import_util.toNumber)(g.stddev) : void 0
+    );
     await w.state(`${p}.packetLoss`, percent("Packet loss"), (0, import_util.toNumber)(g.loss));
     await w.state(`${p}.monitorIp`, text("Monitor IP"), (0, import_util.toStr)(g.monitorip));
     await w.state(`${p}.sourceIp`, text("Source IP"), (0, import_util.toStr)(g.srcip));
@@ -230,17 +236,24 @@ async function pollServices(ctx, allowControl) {
     return names.filter((n) => n === name).length > 1 && s.description ? `${name}_${s.description}` : name;
   });
   for (const [key, s] of keyed) {
-    index.set(key, { id: (0, import_util.toNumber)(s.id), name: serviceKey(s), description: (0, import_util.toStr)(s.description) });
+    index.set(key, { name: serviceKey(s), description: (0, import_util.toStr)(s.description) });
     const p = `services.${key}`;
     await w.channel(p, (0, import_util.toStr)(s.description) || serviceKey(s));
     await w.state(`${p}.name`, text("Service name"), (0, import_util.toStr)(s.name));
     await w.state(`${p}.description`, text("Description"), (0, import_util.toStr)(s.description));
     await w.state(`${p}.enabled`, indicator("Enabled"), (0, import_util.toBool)(s.enabled));
     await w.state(`${p}.running`, indicator("Running", "indicator.working"), (0, import_util.toBool)(s.status));
-    if (allowControl) {
-      await w.defineState(`${p}.start`, button("Start service"));
-      await w.defineState(`${p}.stop`, button("Stop service"));
-      await w.defineState(`${p}.restart`, button("Restart service"));
+    const controllable = allowControl && names.filter((n) => n === serviceKey(s)).length === 1;
+    for (const [action, label] of [
+      ["start", "Start service"],
+      ["stop", "Stop service"],
+      ["restart", "Restart service"]
+    ]) {
+      if (controllable) {
+        await w.defineState(`${p}.${action}`, button(label));
+      } else if (w.has(`${p}.${action}`)) {
+        await w.remove(`${p}.${action}`);
+      }
     }
   }
   await w.removeStale("services", index.keys());
@@ -383,7 +396,8 @@ async function pollVpn(ctx) {
       await w.state(`${p}.clientCount`, num("Connected clients"), conns.length);
       const clients = conns.map((c) => ({
         commonName: c.common_name,
-        user: c.user_name,
+        // certificate-only logins report the placeholder "UNDEF"
+        user: c.user_name && c.user_name !== "UNDEF" ? c.user_name : void 0,
         remoteHost: c.remote_host,
         virtualAddress: c.virtual_addr,
         bytesReceived: c.bytes_recv,
@@ -520,6 +534,13 @@ async function pollVpn(ctx) {
         num("Child SAs"),
         Array.isArray(sas) ? Array.isArray(sa == null ? void 0 : sa.child_sas) ? sa.child_sas.length : 0 : void 0
       );
+      const children = Array.isArray(sa == null ? void 0 : sa.child_sas) ? sa.child_sas : [];
+      const sum = (k) => Array.isArray(sas) ? children.reduce((n, c) => {
+        var _a2;
+        return n + ((_a2 = (0, import_util.toNumber)(c[k])) != null ? _a2 : 0);
+      }, 0) : void 0;
+      await w.state(`${p}.rxBytes`, num("Received (current SAs)", "B"), sum("bytes_in"));
+      await w.state(`${p}.txBytes`, num("Sent (current SAs)", "B"), sum("bytes_out"));
     }
     await w.removeStale("vpn.ipsec", keys);
   }

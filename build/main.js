@@ -595,14 +595,25 @@ class Pfsense extends utils.Adapter {
     return false;
   }
   async serviceAction(key, action) {
-    var _a;
+    var _a, _b;
     const svc = this.services.get(key);
     if (!svc) {
       throw new Error(`unknown service ${key}`);
     }
-    this.log.info(`Service ${(_a = svc.description) != null ? _a : svc.name}: ${action}`);
-    const body = svc.id !== void 0 ? { id: svc.id, action } : { name: svc.name, action };
-    await this.call((c) => c.post("/api/v2/status/service", body));
+    const list = await this.call((c) => c.get("/api/v2/status/services"));
+    const current = Array.isArray(list) ? list.filter(
+      (s) => s.name === svc.name && (svc.description === void 0 || s.description === svc.description)
+    ) : [];
+    if (Array.isArray(list) && list.filter((s) => s.name === svc.name).length > 1) {
+      throw new Error(
+        `the REST API cannot control "${svc.name}" while several services share that name (e.g. multiple OpenVPN instances)`
+      );
+    }
+    if (current.length !== 1 || (0, import_util.toNumber)(current[0].id) === void 0) {
+      throw new Error(`service ${(_a = svc.description) != null ? _a : svc.name} not found on the firewall (any more)`);
+    }
+    this.log.info(`Service ${(_b = svc.description) != null ? _b : svc.name}: ${action}`);
+    await this.call((c) => c.post("/api/v2/status/service", { id: current[0].id, action }));
   }
   /** Looks a rule up by its tracker (the stable identity), changes it and applies. */
   async setRuleEnabled(tracker, enabled) {

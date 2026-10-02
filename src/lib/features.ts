@@ -202,8 +202,14 @@ export async function pollGateways(ctx: FeatureContext): Promise<void> {
             status === undefined ? undefined : !GATEWAY_DOWN.test(status),
         );
         await w.state(`${p}.substatus`, text('Sub-status'), toStr(g.substatus));
-        await w.state(`${p}.latency`, num('Latency', 'ms'), toNumber(g.delay));
-        await w.state(`${p}.latencyStdDev`, num('Latency standard deviation', 'ms'), toNumber(g.stddev));
+        // With every probe lost, pfSense reports a delay of 0: that is no measurement, so latency is left as it was.
+        const measured = (toNumber(g.loss) ?? 0) < 100;
+        await w.state(`${p}.latency`, num('Latency', 'ms'), measured ? toNumber(g.delay) : undefined);
+        await w.state(
+            `${p}.latencyStdDev`,
+            num('Latency standard deviation', 'ms'),
+            measured ? toNumber(g.stddev) : undefined,
+        );
         await w.state(`${p}.packetLoss`, percent('Packet loss'), toNumber(g.loss));
         await w.state(`${p}.monitorIp`, text('Monitor IP'), toStr(g.monitorip));
         await w.state(`${p}.sourceIp`, text('Source IP'), toStr(g.srcip));
@@ -213,15 +219,8 @@ export async function pollGateways(ctx: FeatureContext): Promise<void> {
 
 // ---- services -----------------------------------------------------------------------------
 
-/** Maps the object key of a service to what the API needs to address it. */
-export type ServiceIndex = Map<
-    string,
-    {
-        id?: number;
-        name: string;
-        description?: string;
-    }
->;
+/** Maps the object key of a service to its name and description (the id is looked up when acting). */
+export type ServiceIndex = Map<string, { name: string; description?: string }>;
 
 /** Base object key of a service (its daemon name). */
 export function serviceKey(s: T.Service): string {
@@ -244,17 +243,26 @@ export async function pollServices(ctx: FeatureContext, allowControl: boolean): 
         return names.filter(n => n === name).length > 1 && s.description ? `${name}_${s.description}` : name;
     });
     for (const [key, s] of keyed) {
-        index.set(key, { id: toNumber(s.id), name: serviceKey(s), description: toStr(s.description) });
+        index.set(key, { name: serviceKey(s), description: toStr(s.description) });
         const p = `services.${key}`;
         await w.channel(p, toStr(s.description) || serviceKey(s));
         await w.state(`${p}.name`, text('Service name'), toStr(s.name));
         await w.state(`${p}.description`, text('Description'), toStr(s.description));
         await w.state(`${p}.enabled`, indicator('Enabled'), toBool(s.enabled));
         await w.state(`${p}.running`, indicator('Running', 'indicator.working'), toBool(s.status));
-        if (allowControl) {
-            await w.defineState(`${p}.start`, button('Start service'));
-            await w.defineState(`${p}.stop`, button('Stop service'));
-            await w.defineState(`${p}.restart`, button('Restart service'));
+        // The REST API refuses actions on services whose name occurs more than once (several OpenVPN
+        // instances): its service model requires unique names. Buttons for those would always fail.
+        const controllable = allowControl && names.filter(n => n === serviceKey(s)).length === 1;
+        for (const [action, label] of [
+            ['start', 'Start service'],
+            ['stop', 'Stop service'],
+            ['restart', 'Restart service'],
+        ] as const) {
+            if (controllable) {
+                await w.defineState(`${p}.${action}`, button(label));
+            } else if (w.has(`${p}.${action}`)) {
+                await w.remove(`${p}.${action}`);
+            }
         }
     }
     await w.removeStale('services', index.keys());
@@ -453,7 +461,8 @@ export async function pollVpn(ctx: FeatureContext): Promise<void> {
             await w.state(`${p}.clientCount`, num('Connected clients'), conns.length);
             const clients = conns.map(c => ({
                 commonName: c.common_name,
-                user: c.user_name,
+                // certificate-only logins report the placeholder "UNDEF"
+                user: c.user_name && c.user_name !== 'UNDEF' ? c.user_name : undefined,
                 remoteHost: c.remote_host,
                 virtualAddress: c.virtual_addr,
                 bytesReceived: c.bytes_recv,
@@ -583,6 +592,12 @@ export async function pollVpn(ctx: FeatureContext): Promise<void> {
                 num('Child SAs'),
                 Array.isArray(sas) ? (Array.isArray(sa?.child_sas) ? sa.child_sas.length : 0) : undefined,
             );
+            // traffic of the current SAs; counters restart when the tunnel rekeys or reconnects
+            const children = Array.isArray(sa?.child_sas) ? sa.child_sas : [];
+            const sum = (k: 'bytes_in' | 'bytes_out'): number | undefined =>
+                Array.isArray(sas) ? children.reduce((n, c) => n + (toNumber(c[k]) ?? 0), 0) : undefined;
+            await w.state(`${p}.rxBytes`, num('Received (current SAs)', 'B'), sum('bytes_in'));
+            await w.state(`${p}.txBytes`, num('Sent (current SAs)', 'B'), sum('bytes_out'));
         }
         await w.removeStale('vpn.ipsec', keys);
     }

@@ -124,7 +124,7 @@ entries for up to 20 minutes, so a device that leaves can take that long to be r
 | `system.*` | `version`, `hostname`, `apiVersion`, `apiUpdateAvailable`, `cpuUsage`, `load1/5/15`, `memoryUsage`, `swapUsage`, `diskUsage`, `mbufUsage`, `temperature` (only if the box has a sensor), `uptime` (s), … |
 | `interfaces.<id>.*` | `up`, `status`, `ipv4`, `ipv6`, `mac`, `media`, `rxBytes`, `txBytes`, `rxRate`, `txRate` (bit/s), errors, … |
 | `gateways.<name>.*` | `online`, `status`, `latency` (ms), `latencyStdDev`, `packetLoss` (%), `monitorIp` |
-| `services.<name>.*` | `running`, `enabled`, `description`, buttons `start`, `stop`, `restart`. Services that run more than once (e.g. two OpenVPN servers) get the description in their id. |
+| `services.<name>.*` | `running`, `enabled`, `description`, buttons `start`, `stop`, `restart`. Services that run more than once (e.g. two OpenVPN servers) get the description in their id. The REST API cannot start, stop or restart such services (its service model requires unique names), so they have no buttons. |
 | `network.*` | `leaseCount`, `arpCount`, `onlineCount`, `hosts` (JSON) |
 | `devices.<mac>.*` | `present`, `lastSeen`, `ip`, `hostname`, `mac`, `interface`, `leaseEnds`, button `wake` |
 | `vpn.openvpn.servers.server<id>.*` | `clientCount`, `clients` (JSON), `port`, `mode` |

@@ -1,6 +1,7 @@
 // Fixture responses. System, interfaces, gateways, services, ARP, rules and the error shapes follow
 // responses captured from pfSense CE 2.8.1 with REST API package v2.10.2 (identifiers anonymised).
-// DHCP leases and VPN status follow the OpenAPI schema; no live sample yet.
+// VPN, CARP and gateway-down shapes were captured from the same test setup (OpenVPN both ways,
+// WireGuard, IPsec IKEv2, CARP pair). DHCP leases follow a captured ISC lease.
 
 export function fixtureData(): Record<string, unknown> {
     return {
@@ -78,6 +79,16 @@ export function fixtureData(): Record<string, unknown> {
             },
         ],
         '/api/v2/status/gateways': [
+            {
+                name: 'TEST_DEAD',
+                srcip: '192.168.1.50',
+                monitorip: '192.0.2.1',
+                delay: 0, // reported while every probe is lost
+                stddev: 0,
+                loss: 100,
+                status: 'down',
+                substatus: 'highloss',
+            },
             {
                 name: 'WAN_DHCP',
                 srcip: '192.168.1.50',
@@ -165,7 +176,7 @@ export function fixtureData(): Record<string, unknown> {
                         bytes_recv: 1234,
                         bytes_sent: 5678,
                         connect_time_unix: 1_790_000_000,
-                        user_name: 'alice',
+                        user_name: 'UNDEF', // certificate-only login
                     },
                 ],
             },
@@ -205,9 +216,19 @@ export function fixtureData(): Record<string, unknown> {
         ],
         '/api/v2/vpn/ipsec/phase1s': [{ ikeid: 1, descr: 'Branch', disabled: false, remote_gateway: '198.51.100.20' }],
         '/api/v2/status/ipsec/sas': [
-            { con_id: 'con1', state: 'ESTABLISHED', remote_host: '198.51.100.20', established: 3600, child_sas: [{}] },
+            {
+                con_id: 'con1',
+                uniqueid: 2,
+                version: 2,
+                state: 'ESTABLISHED',
+                local_host: '192.168.1.50',
+                remote_host: '198.51.100.20',
+                established: 3600,
+                child_sas: [{ name: 'con1', state: 'INSTALLED', bytes_in: 1000, bytes_out: 2500 }],
+            },
         ],
         '/api/v2/firewall/virtual_ips': [],
+        // filled by tests that need CARP: { mode: 'carp', interface: 'lan', subnet: '10.9.0.254', vhid: 1, carp_status: 'master', carp_mode: 'mcast' }
         '/api/v2/status/carp': { enable: true, maintenance_mode: false },
         '/api/v2/firewall/rules': [
             { tracker: 1000000101, type: 'pass', interface: ['lan'], descr: 'Default allow LAN', disabled: false },

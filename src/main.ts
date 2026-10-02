@@ -7,7 +7,7 @@ import { cleanHost, parseSettings, type Settings } from './lib/config';
 import * as F from './lib/features';
 import { ObjectWriter } from './lib/objects';
 import { PresenceTracker } from './lib/presence';
-import type { Carp, FirewallAlias, FirewallRule, RestApiVersion, SystemVersion } from './lib/types';
+import type { Carp, FirewallAlias, FirewallRule, RestApiVersion, Service, SystemVersion } from './lib/types';
 import { errorMessage, normalizeMac, RateTracker, toNumber } from './lib/util';
 
 /** An endpoint that answered "not available" is retried after this long (a package may get installed meanwhile). */
@@ -658,9 +658,24 @@ class Pfsense extends utils.Adapter {
         if (!svc) {
             throw new Error(`unknown service ${key}`);
         }
+        // The API addresses services by list position, which shifts when a package adds or removes one,
+        // so the id is looked up fresh right before acting instead of trusting the last poll.
+        const list = await this.call(c => c.get<Service[]>('/api/v2/status/services'));
+        const current = Array.isArray(list)
+            ? list.filter(
+                  s => s.name === svc.name && (svc.description === undefined || s.description === svc.description),
+              )
+            : [];
+        if (Array.isArray(list) && list.filter(s => s.name === svc.name).length > 1) {
+            throw new Error(
+                `the REST API cannot control "${svc.name}" while several services share that name (e.g. multiple OpenVPN instances)`,
+            );
+        }
+        if (current.length !== 1 || toNumber(current[0].id) === undefined) {
+            throw new Error(`service ${svc.description ?? svc.name} not found on the firewall (any more)`);
+        }
         this.log.info(`Service ${svc.description ?? svc.name}: ${action}`);
-        const body = svc.id !== undefined ? { id: svc.id, action } : { name: svc.name, action };
-        await this.call(c => c.post('/api/v2/status/service', body));
+        await this.call(c => c.post('/api/v2/status/service', { id: current[0].id, action }));
     }
 
     /** Looks a rule up by its tracker (the stable identity), changes it and applies. */

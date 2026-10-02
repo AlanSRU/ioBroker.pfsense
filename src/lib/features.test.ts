@@ -93,7 +93,14 @@ describe('features', () => {
             });
             const data = fixtureData();
             data['/api/v2/firewall/virtual_ips'] = [
-                { mode: 'carp', interface: 'lan', subnet: '10.9.0.254', vhid: 1, carp_status: 'MASTER' },
+                {
+                    mode: 'carp',
+                    interface: 'lan',
+                    subnet: '10.9.0.254',
+                    vhid: 1,
+                    carp_status: 'master',
+                    carp_mode: 'mcast',
+                },
             ];
             await pollEverything(fa, data);
         });
@@ -149,6 +156,11 @@ describe('features', () => {
                     expect(c.def, id).to.not.equal(undefined);
                 }
             }
+        });
+
+        it('reports CARP master state from the lower-case API value', () => {
+            expect(fa.states.get('carp.vips.lan_vhid1.master')).to.equal(true);
+            expect(fa.states.get('carp.vips.lan_vhid1.status')).to.equal('master');
         });
 
         it('only uses safe characters in ids', () => {
@@ -215,6 +227,20 @@ describe('features', () => {
             expect(fa.states.get('vpn.wireguard.tun_wg0.peers.Abc_def_ghiJKLmn.connected')).to.equal(false);
         });
 
+        it('does not report a latency for a gateway with every probe lost', () => {
+            expect(fa.states.get('gateways.TEST_DEAD.online')).to.equal(false);
+            expect(fa.states.get('gateways.TEST_DEAD.packetLoss')).to.equal(100);
+            expect(fa.objects.has('gateways.TEST_DEAD.latency')).to.equal(false);
+            expect(fa.states.get('gateways.WAN_DHCP.latency')).to.equal(0.42);
+        });
+
+        it('hides the UNDEF user of certificate-only OpenVPN logins and sums IPsec traffic', () => {
+            const clients = JSON.parse(fa.states.get('vpn.openvpn.servers.server1.clients') as string);
+            expect(clients[0]).to.not.have.property('user');
+            expect(fa.states.get('vpn.ipsec.con1.rxBytes')).to.equal(1000);
+            expect(fa.states.get('vpn.ipsec.con1.txBytes')).to.equal(2500);
+        });
+
         it('keys rules by tracker and maps disabled to enabled=false', () => {
             expect(fa.states.get('firewall.rules.1000000101.enabled')).to.equal(true);
             expect(fa.states.get('firewall.rules.1000000102.enabled')).to.equal(false);
@@ -269,6 +295,14 @@ describe('features', () => {
             await F.pollVpn(ctx);
             expect(fa.states.get('vpn.ipsec.con1.connected')).to.equal(false);
             expect(fa.states.get('vpn.ipsec.con1.state')).to.equal('DOWN');
+        });
+
+        it('creates no buttons for services the API cannot control (duplicate names)', async () => {
+            const fa = new FakeAdapter();
+            await F.pollServices(ctxFor(fa, fixtureData()), true);
+            expect(fa.objects.has('services.unbound.restart')).to.equal(true);
+            expect(fa.objects.has('services.openvpn_OpenVPN_server_Road_Warrior.restart')).to.equal(false);
+            expect(fa.states.get('services.openvpn_OpenVPN_server_Road_Warrior.running')).to.equal(true);
         });
 
         it('creates no service buttons when control is off', async () => {

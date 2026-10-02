@@ -191,6 +191,14 @@ export interface IpsecPhase1 {
     remote_gateway?: string;
 }
 
+/** A child SA inside an IPsec SA status */
+export interface IpsecChildSa {
+    name?: string;
+    state?: string;
+    bytes_in?: number;
+    bytes_out?: number;
+}
+
 /** GET /api/v2/status/ipsec/sas (one item) */
 export interface IpsecSa {
     con_id?: string;
@@ -198,7 +206,7 @@ export interface IpsecSa {
     remote_host?: string;
     local_host?: string;
     established?: number;
-    child_sas?: unknown[];
+    child_sas?: IpsecChildSa[];
 }
 
 /** GET /api/v2/firewall/rules (one item) */
