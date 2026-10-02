@@ -23,8 +23,8 @@ __export(presence_exports, {
 });
 module.exports = __toCommonJS(presence_exports);
 var import_util = require("./util");
-function collectSightings(leases, arp) {
-  var _a, _b, _c, _d, _e, _f, _g;
+function collectSightings(leases, arp, ifaceIds = /* @__PURE__ */ new Map()) {
+  var _a, _b, _c, _d, _e, _f, _g, _h;
   const out = /* @__PURE__ */ new Map();
   for (const l of leases) {
     const mac = (0, import_util.normalizeMac)(l.mac);
@@ -36,7 +36,7 @@ function collectSightings(leases, arp) {
     (_c = s.hostname) != null ? _c : s.hostname = l.hostname || void 0;
     (_d = s.interface) != null ? _d : s.interface = l.if || void 0;
     (_e = s.leaseEnds) != null ? _e : s.leaseEnds = l.ends || void 0;
-    if (typeof l.online_status === "string" && /^online$/i.test(l.online_status.trim())) {
+    if (typeof l.online_status === "string" && l.online_status.toLowerCase().split("/").some((p) => p.trim() === "online")) {
       s.online = true;
     }
     out.set(mac, s);
@@ -49,8 +49,11 @@ function collectSightings(leases, arp) {
     const s = (_f = out.get(mac)) != null ? _f : { mac, online: false };
     s.online = true;
     s.ip = a.ip_address || s.ip;
+    if (a.interface) {
+      (_g = s.interface) != null ? _g : s.interface = ifaceIds.get(a.interface.toLowerCase());
+    }
     if (a.hostname && a.hostname !== "?") {
-      (_g = s.hostname) != null ? _g : s.hostname = a.hostname;
+      (_h = s.hostname) != null ? _h : s.hostname = a.hostname;
     }
     out.set(mac, s);
   }

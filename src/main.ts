@@ -70,6 +70,8 @@ class Pfsense extends utils.Adapter {
 
     private services: F.ServiceIndex = new Map();
     private wake: F.WakeIndex = new Map();
+    /** Interface description/hardware name → id, for Wake-on-LAN requests that name the interface loosely. */
+    private ifaceIds = new Map<string, string>();
     private hosts: unknown[] = [];
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
@@ -253,6 +255,7 @@ class Pfsense extends utils.Adapter {
                 });
                 if (r) {
                     this.wake = r.wake;
+                    this.ifaceIds = r.ifaceIds;
                     this.hosts = r.sightings;
                 }
             });
@@ -477,7 +480,9 @@ class Pfsense extends utils.Adapter {
             this.logOnce(
                 key,
                 'info',
-                `${path} is not offered by this REST API package version. Updating the package enables it.`,
+                err.kind === 'notFound' && err.message
+                    ? `${path} is not available: ${err.message}`
+                    : `${path} is not offered by this REST API package version. Updating the package enables it.`,
             );
         } else {
             this.logOnce(key, 'warn', `${path} failed: ${err.message}`);
@@ -675,7 +680,7 @@ class Pfsense extends utils.Adapter {
     }
 
     private async wakeOnLan(mac: string, iface?: string): Promise<void> {
-        const target = iface || this.wake.get(mac);
+        const target = (iface && (this.ifaceIds.get(iface.toLowerCase()) ?? iface)) || this.wake.get(mac);
         if (!target) {
             throw new Error(`no interface known for ${mac}; set it in the presence list or pass it to the command`);
         }

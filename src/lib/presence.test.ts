@@ -17,6 +17,20 @@ describe('presence', () => {
         });
     });
 
+    it('reads the combined lease online status and maps ARP interface names', () => {
+        const s = collectSightings(
+            [
+                { mac: 'aa:bb:cc:dd:ee:01', online_status: 'active/online', if: null as unknown as string },
+                { mac: 'aa:bb:cc:dd:ee:02', online_status: 'idle/offline' },
+            ],
+            [{ mac_address: 'aa:bb:cc:dd:ee:01', interface: 'LAN' }],
+            new Map([['lan', 'lan']]),
+        );
+        expect(s.get('aa:bb:cc:dd:ee:01')!.online).to.equal(true);
+        expect(s.get('aa:bb:cc:dd:ee:01')!.interface).to.equal('lan');
+        expect(s.get('aa:bb:cc:dd:ee:02')!.online).to.equal(false);
+    });
+
     it('ignores permanent ARP entries and invalid MACs', () => {
         const s = collectSightings([{ mac: 'bogus' }], [{ mac_address: 'aa:bb:cc:dd:ee:02', permanent: true }]);
         expect(s.size).to.equal(0);

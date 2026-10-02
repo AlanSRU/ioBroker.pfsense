@@ -20,6 +20,7 @@ var features_exports = {};
 __export(features_exports, {
   button: () => button,
   configuredMacs: () => configuredMacs,
+  interfaceIdMap: () => interfaceIdMap,
   parseWatched: () => parseWatched,
   pollCarp: () => pollCarp,
   pollFirewallAliases: () => pollFirewallAliases,
@@ -104,9 +105,13 @@ async function pollSystemStatus(ctx) {
     return;
   }
   await w.channel("system", "System");
-  await w.state("system.platform", text("Platform"), (0, import_util.toStr)(s.platform));
-  await w.state("system.serial", { name: "Serial number", type: "string", role: "info.serial" }, (0, import_util.toStr)(s.serial));
-  await w.state("system.netgateId", text("Netgate device ID"), (0, import_util.toStr)(s.netgate_id));
+  await w.state("system.platform", text("Platform"), (0, import_util.toStr)(s.platform) || void 0);
+  await w.state(
+    "system.serial",
+    { name: "Serial number", type: "string", role: "info.serial" },
+    (0, import_util.toStr)(s.serial) || void 0
+  );
+  await w.state("system.netgateId", text("Netgate device ID"), (0, import_util.toStr)(s.netgate_id) || void 0);
   await w.state("system.cpuModel", text("CPU model"), (0, import_util.toStr)(s.cpu_model));
   await w.state("system.cpuCount", num("CPU cores"), (0, import_util.toNumber)(s.cpu_count));
   await w.state("system.cpuUsage", percent("CPU usage"), (0, import_util.toNumber)(s.cpu_usage));
@@ -144,14 +149,13 @@ async function pollInterfaces(ctx) {
     await w.state(`${p}.name`, text("Interface id"), (0, import_util.toStr)(i.name));
     await w.state(`${p}.description`, text("Description"), (0, import_util.toStr)(i.descr));
     await w.state(`${p}.device`, text("Hardware interface"), (0, import_util.toStr)(i.hwif));
-    await w.state(`${p}.enabled`, indicator("Enabled"), (0, import_util.toBool)(i.enable));
     await w.state(`${p}.status`, text("Link status"), (0, import_util.toStr)(i.status));
     const status = (0, import_util.toStr)(i.status);
     await w.state(`${p}.up`, indicator("Link up"), status === void 0 ? void 0 : /^up$/i.test(status));
     await w.state(`${p}.ipv4`, { name: "IPv4 address", type: "string", role: "info.ip" }, (0, import_util.toStr)(i.ipaddr));
-    await w.state(`${p}.subnetv4`, num("IPv4 prefix length"), (0, import_util.toNumber)(i.subnet));
+    await w.state(`${p}.subnetv4`, num("IPv4 prefix length"), (0, import_util.prefixLength)(i.subnet));
     await w.state(`${p}.ipv6`, text("IPv6 address"), (0, import_util.toStr)(i.ipaddrv6));
-    await w.state(`${p}.subnetv6`, num("IPv6 prefix length"), (0, import_util.toNumber)(i.subnetv6));
+    await w.state(`${p}.subnetv6`, num("IPv6 prefix length"), (0, import_util.prefixLength)(i.subnetv6));
     await w.state(`${p}.mac`, { name: "MAC address", type: "string", role: "info.mac" }, (0, import_util.toStr)(i.macaddr));
     await w.state(`${p}.mtu`, num("MTU"), (0, import_util.toNumber)(i.mtu));
     await w.state(`${p}.media`, text("Media (speed/duplex)"), (0, import_util.toStr)(i.media));
@@ -242,14 +246,32 @@ async function pollServices(ctx, allowControl) {
   await w.removeStale("services", index.keys());
   return index;
 }
+function interfaceIdMap(list) {
+  const m = /* @__PURE__ */ new Map();
+  for (const i of list) {
+    const id = (0, import_util.toStr)(i.name);
+    if (!id) {
+      continue;
+    }
+    for (const label of [i.name, i.descr, i.hwif]) {
+      if (typeof label === "string" && label) {
+        m.set(label.toLowerCase(), id);
+      }
+    }
+  }
+  return m;
+}
 async function pollNetwork(ctx, opts) {
+  var _a;
   const { w } = ctx;
   const leases = await ctx.fetch("/api/v2/status/dhcp_server/leases");
   const arp = await ctx.fetch("/api/v2/diagnostics/arp_table");
   if (!Array.isArray(leases) && !Array.isArray(arp)) {
     return void 0;
   }
-  const sightings = (0, import_presence.collectSightings)(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : []);
+  const ifaces = Array.isArray(arp) && arp.length ? await ctx.fetch("/api/v2/status/interfaces") : void 0;
+  const ifaceIds = interfaceIdMap(Array.isArray(ifaces) ? ifaces : []);
+  const sightings = (0, import_presence.collectSightings)(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : [], ifaceIds);
   const all = [...sightings.values()].sort((a, b) => a.mac.localeCompare(b.mac));
   await w.folder("network", "Network");
   if (Array.isArray(leases)) {
@@ -284,7 +306,7 @@ async function pollNetwork(ctx, opts) {
   }
   for (const [mac, d] of devices) {
     const s = sightings.get(mac);
-    const iface = d.interface || (s == null ? void 0 : s.interface) || "";
+    const iface = d.interface && ((_a = ifaceIds.get(d.interface.toLowerCase())) != null ? _a : d.interface) || (s == null ? void 0 : s.interface) || "";
     if (iface) {
       wake.set(mac, iface);
     }
@@ -304,7 +326,7 @@ async function pollNetwork(ctx, opts) {
     );
     await w.defineState(`${p}.wake`, button("Wake-on-LAN"));
   }
-  return { wake, sightings: all };
+  return { wake, sightings: all, ifaceIds };
 }
 function configuredMacs(watched) {
   return new Set(watched.map((d) => d.mac));
@@ -621,6 +643,7 @@ async function pollFirewallPending(ctx) {
 0 && (module.exports = {
   button,
   configuredMacs,
+  interfaceIdMap,
   parseWatched,
   pollCarp,
   pollFirewallAliases,

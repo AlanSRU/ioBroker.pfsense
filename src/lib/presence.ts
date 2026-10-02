@@ -19,7 +19,11 @@ export interface Sighting {
  * (pfSense derives that from ARP too, but the lease list covers hosts on other subnets
  * the API user may not see in ARP).
  */
-export function collectSightings(leases: DhcpLease[], arp: ArpEntry[]): Map<string, Sighting> {
+export function collectSightings(
+    leases: DhcpLease[],
+    arp: ArpEntry[],
+    ifaceIds: Map<string, string> = new Map(),
+): Map<string, Sighting> {
     const out = new Map<string, Sighting>();
     for (const l of leases) {
         const mac = normalizeMac(l.mac);
@@ -31,7 +35,14 @@ export function collectSightings(leases: DhcpLease[], arp: ArpEntry[]): Map<stri
         s.hostname ??= l.hostname || undefined;
         s.interface ??= l.if || undefined;
         s.leaseEnds ??= l.ends || undefined;
-        if (typeof l.online_status === 'string' && /^online$/i.test(l.online_status.trim())) {
+        // reported as "active/online", "idle/offline", or just "online" depending on version and backend
+        if (
+            typeof l.online_status === 'string' &&
+            l.online_status
+                .toLowerCase()
+                .split('/')
+                .some(p => p.trim() === 'online')
+        ) {
             s.online = true;
         }
         out.set(mac, s);
@@ -45,6 +56,9 @@ export function collectSightings(leases: DhcpLease[], arp: ArpEntry[]): Map<stri
         const s: Sighting = out.get(mac) ?? { mac, online: false };
         s.online = true;
         s.ip = a.ip_address || s.ip;
+        if (a.interface) {
+            s.interface ??= ifaceIds.get(a.interface.toLowerCase());
+        }
         if (a.hostname && a.hostname !== '?') {
             s.hostname ??= a.hostname;
         }

@@ -40,6 +40,27 @@ export function toNumber(v: unknown): number | undefined {
     return undefined;
 }
 
+/**
+ * Prefix length from what pfSense reports as a subnet: a prefix length ("24", 64) or, for IPv4,
+ * a dotted netmask ("255.255.255.0"). Non-contiguous masks and garbage give undefined.
+ */
+export function prefixLength(v: unknown): number | undefined {
+    const n = toNumber(v);
+    if (n !== undefined) {
+        return Number.isInteger(n) && n >= 0 && n <= 128 ? n : undefined;
+    }
+    if (typeof v !== 'string' || !/^\d{1,3}(\.\d{1,3}){3}$/.test(v.trim())) {
+        return undefined;
+    }
+    const bits = v
+        .trim()
+        .split('.')
+        .map(o => Number(o))
+        .map(o => (o > 255 ? 'x' : o.toString(2).padStart(8, '0')))
+        .join('');
+    return /^1*0*$/.test(bits) ? (bits.indexOf('0') === -1 ? 32 : bits.indexOf('0')) : undefined;
+}
+
 /** Strict string conversion: only real strings pass, so `null` never becomes "null". */
 export function toStr(v: unknown): string | undefined {
     return typeof v === 'string' ? v : undefined;

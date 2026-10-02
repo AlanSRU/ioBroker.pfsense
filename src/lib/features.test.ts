@@ -177,6 +177,22 @@ describe('features', () => {
             expect(fa.objects.has('system.temperature')).to.equal(false);
         });
 
+        it('leaves out blank and unreliable fields', () => {
+            expect(fa.objects.has('system.serial')).to.equal(false); // '' on virtual machines
+            expect(fa.objects.has('interfaces.wan.enabled')).to.equal(false);
+        });
+
+        it('turns netmasks into prefix lengths', () => {
+            expect(fa.states.get('interfaces.wan.subnetv4')).to.equal(24);
+            expect(fa.states.get('interfaces.wan.subnetv6')).to.equal(64);
+            expect(fa.objects.has('interfaces.lan.subnetv6')).to.equal(false);
+        });
+
+        it('resolves the ARP interface description to the id Wake-on-LAN needs', () => {
+            expect(fa.states.get('devices.aa_bb_cc_00_00_03.interface')).to.equal('lan');
+            expect(fa.states.get('devices.aa_bb_cc_00_00_03.present')).to.equal(true);
+        });
+
         it('keys duplicate service names by description', () => {
             expect(fa.states.get('services.unbound.running')).to.equal(true);
             expect(fa.states.get('services.openvpn_OpenVPN_server_Road_Warrior.running')).to.equal(true);

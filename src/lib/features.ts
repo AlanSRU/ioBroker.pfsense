@@ -7,6 +7,7 @@ import {
     normalizeMac,
     parseLeaseTime,
     parseUptime,
+    prefixLength,
     type RateTracker,
     sanitizeId,
     toBool,
@@ -97,9 +98,14 @@ export async function pollSystemStatus(ctx: FeatureContext): Promise<void> {
         return;
     }
     await w.channel('system', 'System');
-    await w.state('system.platform', text('Platform'), toStr(s.platform));
-    await w.state('system.serial', { name: 'Serial number', type: 'string', role: 'info.serial' }, toStr(s.serial));
-    await w.state('system.netgateId', text('Netgate device ID'), toStr(s.netgate_id));
+    // virtual machines report an empty serial: blanks are left out rather than shown
+    await w.state('system.platform', text('Platform'), toStr(s.platform) || undefined);
+    await w.state(
+        'system.serial',
+        { name: 'Serial number', type: 'string', role: 'info.serial' },
+        toStr(s.serial) || undefined,
+    );
+    await w.state('system.netgateId', text('Netgate device ID'), toStr(s.netgate_id) || undefined);
     await w.state('system.cpuModel', text('CPU model'), toStr(s.cpu_model));
     await w.state('system.cpuCount', num('CPU cores'), toNumber(s.cpu_count));
     await w.state('system.cpuUsage', percent('CPU usage'), toNumber(s.cpu_usage));
@@ -139,14 +145,14 @@ export async function pollInterfaces(ctx: FeatureContext): Promise<void> {
         await w.state(`${p}.name`, text('Interface id'), toStr(i.name));
         await w.state(`${p}.description`, text('Description'), toStr(i.descr));
         await w.state(`${p}.device`, text('Hardware interface'), toStr(i.hwif));
-        await w.state(`${p}.enabled`, indicator('Enabled'), toBool(i.enable));
+        // `enable` is unreliable in the API (false on interfaces that are clearly in use), so it is not exposed
         await w.state(`${p}.status`, text('Link status'), toStr(i.status));
         const status = toStr(i.status);
         await w.state(`${p}.up`, indicator('Link up'), status === undefined ? undefined : /^up$/i.test(status));
         await w.state(`${p}.ipv4`, { name: 'IPv4 address', type: 'string', role: 'info.ip' }, toStr(i.ipaddr));
-        await w.state(`${p}.subnetv4`, num('IPv4 prefix length'), toNumber(i.subnet));
+        await w.state(`${p}.subnetv4`, num('IPv4 prefix length'), prefixLength(i.subnet));
         await w.state(`${p}.ipv6`, text('IPv6 address'), toStr(i.ipaddrv6));
-        await w.state(`${p}.subnetv6`, num('IPv6 prefix length'), toNumber(i.subnetv6));
+        await w.state(`${p}.subnetv6`, num('IPv6 prefix length'), prefixLength(i.subnetv6));
         await w.state(`${p}.mac`, { name: 'MAC address', type: 'string', role: 'info.mac' }, toStr(i.macaddr));
         await w.state(`${p}.mtu`, num('MTU'), toNumber(i.mtu));
         await w.state(`${p}.media`, text('Media (speed/duplex)'), toStr(i.media));
@@ -275,6 +281,23 @@ export interface PresenceOptions {
 /** What Wake-on-LAN needs: the pfSense interface a MAC was last seen on. */
 export type WakeIndex = Map<string, string>;
 
+/** Maps interface id, description and hardware name (case-insensitive) to the pfSense interface id. */
+export function interfaceIdMap(list: T.InterfaceStats[]): Map<string, string> {
+    const m = new Map<string, string>();
+    for (const i of list) {
+        const id = toStr(i.name);
+        if (!id) {
+            continue;
+        }
+        for (const label of [i.name, i.descr, i.hwif]) {
+            if (typeof label === 'string' && label) {
+                m.set(label.toLowerCase(), id);
+            }
+        }
+    }
+    return m;
+}
+
 /** DHCP leases and ARP table: host summary, presence devices and the Wake-on-LAN lookup. */
 export async function pollNetwork(
     ctx: FeatureContext,
@@ -283,6 +306,7 @@ export async function pollNetwork(
     | {
           wake: WakeIndex;
           sightings: Sighting[];
+          ifaceIds: Map<string, string>;
       }
     | undefined
 > {
@@ -292,7 +316,11 @@ export async function pollNetwork(
     if (!Array.isArray(leases) && !Array.isArray(arp)) {
         return undefined;
     }
-    const sightings = collectSightings(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : []);
+    // The ARP table names interfaces by description ("LAN"); Wake-on-LAN needs the id ("lan").
+    const ifaces =
+        Array.isArray(arp) && arp.length ? await ctx.fetch<T.InterfaceStats[]>('/api/v2/status/interfaces') : undefined;
+    const ifaceIds = interfaceIdMap(Array.isArray(ifaces) ? ifaces : []);
+    const sightings = collectSightings(Array.isArray(leases) ? leases : [], Array.isArray(arp) ? arp : [], ifaceIds);
     const all = [...sightings.values()].sort((a, b) => a.mac.localeCompare(b.mac));
 
     await w.folder('network', 'Network');
@@ -338,7 +366,7 @@ export async function pollNetwork(
     }
     for (const [mac, d] of devices) {
         const s = sightings.get(mac);
-        const iface = d.interface || s?.interface || '';
+        const iface = (d.interface && (ifaceIds.get(d.interface.toLowerCase()) ?? d.interface)) || s?.interface || '';
         if (iface) {
             wake.set(mac, iface);
         }
@@ -358,7 +386,7 @@ export async function pollNetwork(
         );
         await w.defineState(`${p}.wake`, button('Wake-on-LAN'));
     }
-    return { wake, sightings: all };
+    return { wake, sightings: all, ifaceIds };
 }
 
 /** MACs of configured devices; anything else under `devices` was removed from the list (or auto-tracked). */

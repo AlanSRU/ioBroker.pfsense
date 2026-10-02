@@ -94,6 +94,9 @@ you can limit the rules to the ones you tagged, for example with `[iob]` in thei
   objects view are kept.
 - **Keep present after last sighting** avoids false "away" events when a phone sleeps for a moment.
 
+`leaseEnds` assumes pfSense's default of showing lease times in UTC; if "Change DHCP display lease time from UTC to local
+time" is ticked in the DHCP server settings, the value is off by the firewall's UTC offset.
+
 A device counts as seen when it has an ARP entry on the firewall or its DHCP lease is reported online. FreeBSD keeps ARP
 entries for up to 20 minutes, so a device that leaves can take that long to be reported absent.
 

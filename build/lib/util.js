@@ -25,6 +25,7 @@ __export(util_exports, {
   normalizeMac: () => normalizeMac,
   parseLeaseTime: () => parseLeaseTime,
   parseUptime: () => parseUptime,
+  prefixLength: () => prefixLength,
   sanitizeId: () => sanitizeId,
   toBool: () => toBool,
   toNumber: () => toNumber,
@@ -57,6 +58,17 @@ function toNumber(v) {
     return Number.isFinite(n) ? n : void 0;
   }
   return void 0;
+}
+function prefixLength(v) {
+  const n = toNumber(v);
+  if (n !== void 0) {
+    return Number.isInteger(n) && n >= 0 && n <= 128 ? n : void 0;
+  }
+  if (typeof v !== "string" || !/^\d{1,3}(\.\d{1,3}){3}$/.test(v.trim())) {
+    return void 0;
+  }
+  const bits = v.trim().split(".").map((o) => Number(o)).map((o) => o > 255 ? "x" : o.toString(2).padStart(8, "0")).join("");
+  return /^1*0*$/.test(bits) ? bits.indexOf("0") === -1 ? 32 : bits.indexOf("0") : void 0;
 }
 function toStr(v) {
   return typeof v === "string" ? v : void 0;
@@ -147,6 +159,7 @@ function errorMessage(err) {
   normalizeMac,
   parseLeaseTime,
   parseUptime,
+  prefixLength,
   sanitizeId,
   toBool,
   toNumber,

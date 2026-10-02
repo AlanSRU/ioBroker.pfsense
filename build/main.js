@@ -67,6 +67,8 @@ class Pfsense extends utils.Adapter {
   reported = /* @__PURE__ */ new Set();
   services = /* @__PURE__ */ new Map();
   wake = /* @__PURE__ */ new Map();
+  /** Interface description/hardware name → id, for Wake-on-LAN requests that name the interface loosely. */
+  ifaceIds = /* @__PURE__ */ new Map();
   hosts = [];
   constructor(options = {}) {
     super({ ...options, name: "pfsense" });
@@ -237,6 +239,7 @@ class Pfsense extends utils.Adapter {
         });
         if (r) {
           this.wake = r.wake;
+          this.ifaceIds = r.ifaceIds;
           this.hosts = r.sightings;
         }
       });
@@ -433,7 +436,7 @@ class Pfsense extends utils.Adapter {
       this.logOnce(
         key,
         "info",
-        `${path} is not offered by this REST API package version. Updating the package enables it.`
+        err.kind === "notFound" && err.message ? `${path} is not available: ${err.message}` : `${path} is not offered by this REST API package version. Updating the package enables it.`
       );
     } else {
       this.logOnce(key, "warn", `${path} failed: ${err.message}`);
@@ -617,7 +620,8 @@ class Pfsense extends utils.Adapter {
     await this.call((c) => c.post("/api/v2/firewall/apply", {}));
   }
   async wakeOnLan(mac, iface) {
-    const target = iface || this.wake.get(mac);
+    var _a;
+    const target = iface && ((_a = this.ifaceIds.get(iface.toLowerCase())) != null ? _a : iface) || this.wake.get(mac);
     if (!target) {
       throw new Error(`no interface known for ${mac}; set it in the presence list or pass it to the command`);
     }

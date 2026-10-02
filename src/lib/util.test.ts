@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import {
     clamp,
     normalizeMac,
+    prefixLength,
     parseLeaseTime,
     parseUptime,
     RateTracker,
@@ -63,6 +64,19 @@ describe('util', () => {
                 expect(parseLeaseTime(v)).to.equal(undefined);
             }
         });
+    });
+
+    it('prefixLength reads prefixes and dotted netmasks', () => {
+        expect(prefixLength('24')).to.equal(24);
+        expect(prefixLength(64)).to.equal(64);
+        expect(prefixLength('255.255.255.0')).to.equal(24);
+        expect(prefixLength('255.255.254.0')).to.equal(23);
+        expect(prefixLength('255.255.255.255')).to.equal(32);
+        expect(prefixLength('0.0.0.0')).to.equal(0);
+        expect(prefixLength('255.0.255.0')).to.equal(undefined);
+        expect(prefixLength('300.0.0.0')).to.equal(undefined);
+        expect(prefixLength(null)).to.equal(undefined);
+        expect(prefixLength('')).to.equal(undefined);
     });
 
     it('normalizeMac accepts common spellings and rejects junk', () => {
