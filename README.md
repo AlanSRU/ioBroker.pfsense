@@ -208,7 +208,7 @@ the connection is back.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.0 (2026-10-02)
 
 - (Alan Paris) Initial release: system, interfaces, gateways, services, DHCP/ARP host list and presence, OpenVPN,
   WireGuard, IPsec, CARP, firewall rules and aliases, Wake-on-LAN, optional reboot/shutdown

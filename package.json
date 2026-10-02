@@ -1,6 +1,6 @@
 {
   "name": "iobroker.pfsense",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Monitor and control pfSense firewalls through the pfSense REST API package: system health, interfaces, gateways, services, DHCP and presence, VPN, CARP, firewall rules and Wake-on-LAN",
   "author": {
     "name": "Alan Paris",
