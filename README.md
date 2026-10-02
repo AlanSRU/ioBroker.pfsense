@@ -174,6 +174,21 @@ sendTo('pfsense.0', 'getHosts', {}, res => log(JSON.stringify(res.result)));
 
 The script commands work even when rules and aliases are not shown as objects.
 
+## Known limitations
+
+- **OpenVPN services cannot be started, stopped or restarted** once more than one OpenVPN instance exists. The REST API
+  package rejects these requests because several services share the name `openvpn`
+  ([pfSense-pkg-RESTAPI#953](https://github.com/pfrest/pfSense-pkg-RESTAPI/issues/953)). The adapter shows their status
+  but creates no buttons for them. Tunnel status in `vpn.openvpn.*` is not affected.
+- **WireGuard has no connection state.** A peer counts as connected when its last handshake is less than 3 minutes old,
+  so a lost peer is reported after up to 3 minutes.
+- **Presence relies on what the firewall sees.** Leaving is reported once the firewall's ARP entry has expired (up to
+  20 minutes, typically about 12) plus the grace period. A device that returns is seen as soon as it sends traffic.
+- **Lease end times** assume pfSense shows DHCP lease times in UTC (the default).
+- **One firewall per instance.** For an HA pair, add one instance per node; each reports its own CARP state.
+- The adapter only reads what the REST API package offers. Endpoints a firewall does not support (older package,
+  missing optional package such as WireGuard, missing privilege) are skipped and logged once.
+
 ## Troubleshooting
 
 | Log message | Cause |
@@ -195,7 +210,8 @@ the connection is back.
 -->
 ### **WORK IN PROGRESS**
 
-- (Alan Paris) Initial release
+- (Alan Paris) Initial release: system, interfaces, gateways, services, DHCP/ARP host list and presence, OpenVPN,
+  WireGuard, IPsec, CARP, firewall rules and aliases, Wake-on-LAN, optional reboot/shutdown
 
 ## License
 
