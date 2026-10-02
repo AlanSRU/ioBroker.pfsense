@@ -59,12 +59,15 @@ tests.integration(path.join(__dirname, '..'), {
             it('connects and fills the object tree', async function () {
                 this.timeout(30000);
                 await waitFor(async () => (await harness.states.getStateAsync('pfsense.0.info.connection'))?.val === true);
-                const version = await waitFor(() => harness.states.getStateAsync('pfsense.0.system.version'));
-                expect(version.val).to.equal('2.8.1-RELEASE');
-                const present = await waitFor(() => harness.states.getStateAsync('pfsense.0.devices.aa_bb_cc_00_00_01.present'));
-                expect(present.val).to.equal(true);
-                const rule = await waitFor(() => harness.states.getStateAsync('pfsense.0.firewall.rules.1000000102.enabled'));
-                expect(rule.val).to.equal(false);
+                // A new state first holds its default (false / ''), so wait for the polled value, not for the state.
+                const valueOf = async id => (await harness.states.getStateAsync(id))?.val;
+                const until = (id, expected) => waitFor(async () => (await valueOf(id)) === expected);
+                await until('pfsense.0.system.version', '2.8.1-RELEASE');
+                await until('pfsense.0.devices.aa_bb_cc_00_00_01.present', true);
+                await until('pfsense.0.interfaces.wan.up', true);
+                // the rule switch is false both as default and as polled value: wait for its description first
+                await until('pfsense.0.firewall.rules.1000000102.description', 'Block kids tablet [iob]');
+                expect(await valueOf('pfsense.0.firewall.rules.1000000102.enabled')).to.equal(false);
             });
 
             it('restarts a service on command', async function () {
