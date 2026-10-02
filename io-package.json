@@ -1,0 +1,154 @@
+{
+    "common": {
+        "name": "pfsense",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "uk": "Початкова версія",
+                "zh-cn": "首次出版"
+            }
+        },
+        "titleLang": {
+            "en": "pfSense",
+            "de": "pfSense",
+            "ru": "pfSense",
+            "pt": "pfSense",
+            "nl": "pfSense",
+            "fr": "pfSense",
+            "it": "pfSense",
+            "es": "pfSense",
+            "pl": "pfSense",
+            "uk": "pfSense",
+            "zh-cn": "pfSense"
+        },
+        "desc": {
+            "en": "Monitor and control pfSense firewalls through the pfSense REST API package: system health, interfaces, gateways, services, DHCP and presence, VPN, CARP, firewall rules and Wake-on-LAN",
+            "de": "Überwachen und steuern Sie pfSense-Firewalls über das pfSense-REST-API-Paket: Systemzustand, Schnittstellen, Gateways, Dienste, DHCP und Präsenz, VPN, CARP, Firewall-Regeln und Wake-on-LAN",
+            "ru": "Мониторинг и контроль межсетевых экранов pfSense с помощью пакета API pfSense REST: работоспособность системы, интерфейсы, шлюзы, службы, DHCP и присутствие, VPN, CARP, правила брандмауэра и Wake-on-LAN.",
+            "pt": "Monitore e controle firewalls pfSense através do pacote REST API do pfSense: integridade do sistema, interfaces, gateways, serviços, DHCP e presença, VPN, CARP, regras de firewall e Wake-on-LAN",
+            "nl": "Bewaak en beheer pfSense-firewalls via het pfSense REST API-pakket: systeemgezondheid, interfaces, gateways, services, DHCP en aanwezigheid, VPN, CARP, firewallregels en Wake-on-LAN",
+            "fr": "Surveillez et contrôlez les pare-feu pfSense via le package API pfSense REST : santé du système, interfaces, passerelles, services, DHCP et présence, VPN, CARP, règles de pare-feu et Wake-on-LAN.",
+            "it": "Monitora e controlla i firewall pfSense attraverso il pacchetto API REST pfSense: integrità del sistema, interfacce, gateway, servizi, DHCP e presenza, VPN, CARP, regole firewall e Wake-on-LAN",
+            "es": "Supervise y controle los firewalls de pfSense a través del paquete API REST de pfSense: estado del sistema, interfaces, puertas de enlace, servicios, DHCP y presencia, VPN, CARP, reglas de firewall y Wake-on-LAN",
+            "pl": "Monitoruj i kontroluj zapory ogniowe pfSense za pośrednictwem pakietu API pfSense REST: stan systemu, interfejsy, bramy, usługi, DHCP i obecność, VPN, CARP, reguły zapory i Wake-on-LAN",
+            "uk": "Відстежуйте та керуйте міжмережевими екранами pfSense через пакет pfSense REST API: стан системи, інтерфейси, шлюзи, служби, DHCP і присутність, VPN, CARP, правила брандмауера та Wake-on-LAN",
+            "zh-cn": "通过 pfSense REST API 包监控和控制 pfSense 防火墙：系统运行状况、接口、网关、服务、DHCP 和状态、VPN、CARP、防火墙规则和 LAN 唤醒"
+        },
+        "authors": [
+            "Alan Paris <alan.paris@scottish.rugby>"
+        ],
+        "keywords": [
+            "pfsense",
+            "firewall",
+            "router",
+            "netgate",
+            "vpn",
+            "dhcp",
+            "presence"
+        ],
+        "licenseInformation": {
+            "type": "free",
+            "license": "MIT"
+        },
+        "platform": "Javascript/Node.js",
+        "icon": "pfsense.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/AlanSRU/ioBroker.pfsense/main/admin/pfsense.png",
+        "readme": "https://github.com/AlanSRU/ioBroker.pfsense/blob/main/README.md",
+        "loglevel": "info",
+        "tier": 2,
+        "mode": "daemon",
+        "type": "network",
+        "compact": true,
+        "connectionType": "local",
+        "dataSource": "poll",
+        "adminUI": {
+            "config": "json"
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=6.0.11"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=7.6.20"
+            }
+        ],
+        "supportedMessages": {
+            "custom": true
+        }
+    },
+    "native": {
+        "host": "",
+        "port": 443,
+        "protocol": "https",
+        "tlsMode": "fingerprint",
+        "certFingerprint": "",
+        "authMode": "key",
+        "apiKey": "",
+        "username": "",
+        "password": "",
+        "requestTimeout": 10,
+        "intervalFast": 10,
+        "intervalStatus": 30,
+        "intervalNetwork": 60,
+        "intervalConfig": 300,
+        "enableInterfaces": true,
+        "enableGateways": true,
+        "enableServices": true,
+        "allowServiceControl": true,
+        "enableNetwork": true,
+        "trackAllHosts": false,
+        "presenceGrace": 180,
+        "presenceDevices": [],
+        "enableVpn": true,
+        "enableCarp": true,
+        "enableFirewallRules": false,
+        "ruleFilter": "",
+        "enableAliases": false,
+        "allowPowerControl": false
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Device or service connected",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ],
+    "protectedNative": [
+        "apiKey",
+        "username",
+        "password"
+    ],
+    "encryptedNative": [
+        "apiKey",
+        "password"
+    ]
+}

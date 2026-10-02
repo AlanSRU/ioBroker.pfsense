@@ -1,0 +1,424 @@
+{
+    "i18n": true,
+    "type": "tabs",
+    "items": {
+        "tabConnection": {
+            "type": "panel",
+            "label": "Connection",
+            "items": {
+                "hdrPackage": {
+                    "type": "staticText",
+                    "text": "requirementText",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "host": {
+                    "type": "text",
+                    "label": "Firewall address",
+                    "help": "hostHelp",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "protocol": {
+                    "type": "select",
+                    "label": "Protocol",
+                    "options": [
+                        { "label": "HTTPS", "value": "https" },
+                        { "label": "HTTP (unencrypted)", "value": "http" }
+                    ],
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 2,
+                    "xl": 2
+                },
+                "port": {
+                    "type": "number",
+                    "label": "Port",
+                    "min": 1,
+                    "max": 65535,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 2,
+                    "xl": 2
+                },
+                "tlsMode": {
+                    "type": "select",
+                    "label": "Certificate check",
+                    "help": "tlsModeHelp",
+                    "newLine": true,
+                    "hidden": "data.protocol === 'http'",
+                    "options": [
+                        { "label": "Trust only this certificate fingerprint (recommended)", "value": "fingerprint" },
+                        { "label": "Verify with trusted CAs", "value": "verify" },
+                        { "label": "Do not verify (insecure)", "value": "insecure" }
+                    ],
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "certFingerprint": {
+                    "type": "text",
+                    "label": "Certificate fingerprint (SHA-256)",
+                    "help": "fingerprintHelp",
+                    "hidden": "data.protocol === 'http' || data.tlsMode !== 'fingerprint'",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 5,
+                    "xl": 5
+                },
+                "readFingerprint": {
+                    "type": "sendTo",
+                    "command": "readFingerprint",
+                    "label": "Read certificate fingerprint",
+                    "jsonData": "{\"host\": ${JSON.stringify(data.host || '')}, \"port\": ${Number(data.port) || 443}}",
+                    "useNative": true,
+                    "showProcess": true,
+                    "variant": "outlined",
+                    "hidden": "data.protocol === 'http' || data.tlsMode !== 'fingerprint'",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "authMode": {
+                    "type": "select",
+                    "label": "Authentication",
+                    "newLine": true,
+                    "options": [
+                        { "label": "API key", "value": "key" },
+                        { "label": "User name and password", "value": "basic" }
+                    ],
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "apiKey": {
+                    "type": "password",
+                    "label": "API key",
+                    "help": "apiKeyHelp",
+                    "repeat": false,
+                    "visible": true,
+                    "hidden": "data.authMode === 'basic'",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "username": {
+                    "type": "text",
+                    "label": "User name",
+                    "hidden": "data.authMode !== 'basic'",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "password": {
+                    "type": "password",
+                    "label": "Password",
+                    "repeat": false,
+                    "visible": true,
+                    "hidden": "data.authMode !== 'basic'",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "requestTimeout": {
+                    "type": "number",
+                    "label": "Request timeout",
+                    "unit": "s",
+                    "min": 2,
+                    "max": 60,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 2,
+                    "xl": 2
+                },
+                "testConnection": {
+                    "type": "sendTo",
+                    "command": "testConnection",
+                    "label": "Test connection",
+                    "jsonData": "{\"host\": ${JSON.stringify(data.host || '')}, \"port\": ${Number(data.port) || 443}, \"protocol\": ${JSON.stringify(data.protocol || '')}, \"tlsMode\": ${JSON.stringify(data.tlsMode || '')}, \"certFingerprint\": ${JSON.stringify(data.certFingerprint || '')}, \"authMode\": ${JSON.stringify(data.authMode || '')}, \"apiKey\": ${JSON.stringify(data.apiKey || '')}, \"username\": ${JSON.stringify(data.username || '')}, \"password\": ${JSON.stringify(data.password || '')}, \"requestTimeout\": ${Number(data.requestTimeout) || 10}}",
+                    "showProcess": true,
+                    "variant": "contained",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                }
+            }
+        },
+        "tabData": {
+            "type": "panel",
+            "label": "Data",
+            "items": {
+                "hdrIntervals": {
+                    "type": "header",
+                    "text": "Poll intervals",
+                    "size": 3
+                },
+                "intervalFast": {
+                    "type": "number",
+                    "label": "Interfaces and gateways",
+                    "unit": "s",
+                    "min": 5,
+                    "max": 3600,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "intervalStatus": {
+                    "type": "number",
+                    "label": "System, services, VPN, CARP",
+                    "unit": "s",
+                    "min": 10,
+                    "max": 3600,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "intervalNetwork": {
+                    "type": "number",
+                    "label": "DHCP leases, ARP, presence",
+                    "unit": "s",
+                    "min": 15,
+                    "max": 3600,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "intervalConfig": {
+                    "type": "number",
+                    "label": "Versions, rules, aliases",
+                    "unit": "s",
+                    "min": 60,
+                    "max": 86400,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "hdrFeatures": {
+                    "type": "header",
+                    "text": "Data to read",
+                    "size": 3
+                },
+                "enableInterfaces": {
+                    "type": "checkbox",
+                    "label": "Interfaces",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "enableGateways": {
+                    "type": "checkbox",
+                    "label": "Gateways",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "enableServices": {
+                    "type": "checkbox",
+                    "label": "Services",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "enableVpn": {
+                    "type": "checkbox",
+                    "label": "VPN (OpenVPN, WireGuard, IPsec)",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "enableCarp": {
+                    "type": "checkbox",
+                    "label": "CARP (high availability)",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "enableAliases": {
+                    "type": "checkbox",
+                    "label": "Firewall aliases",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "enableFirewallRules": {
+                    "type": "checkbox",
+                    "label": "Firewall rules (with on/off switch)",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "ruleFilter": {
+                    "type": "text",
+                    "label": "Only rules whose description contains",
+                    "help": "ruleFilterHelp",
+                    "hidden": "!data.enableFirewallRules",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                }
+            }
+        },
+        "tabPresence": {
+            "type": "panel",
+            "label": "Network and presence",
+            "items": {
+                "enableNetwork": {
+                    "type": "checkbox",
+                    "label": "Read DHCP leases and ARP table",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "trackAllHosts": {
+                    "type": "checkbox",
+                    "label": "Create a device for every host seen",
+                    "help": "trackAllHelp",
+                    "disabled": "!data.enableNetwork",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "presenceGrace": {
+                    "type": "number",
+                    "label": "Keep present after last sighting",
+                    "help": "graceHelp",
+                    "unit": "s",
+                    "min": 0,
+                    "max": 86400,
+                    "disabled": "!data.enableNetwork",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "presenceDevices": {
+                    "type": "table",
+                    "label": "Presence devices",
+                    "newLine": true,
+                    "disabled": "!data.enableNetwork",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12,
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "attr": "enabled",
+                            "title": "Active",
+                            "width": "10%",
+                            "default": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "name",
+                            "title": "Name",
+                            "width": "30%",
+                            "default": ""
+                        },
+                        {
+                            "type": "text",
+                            "attr": "mac",
+                            "title": "MAC address",
+                            "width": "30%",
+                            "default": "",
+                            "validator": "/^([0-9A-Fa-f]{2}[:-]?){5}[0-9A-Fa-f]{2}$/.test(data.mac)",
+                            "validatorNoSaveOnError": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "interface",
+                            "title": "Interface for Wake-on-LAN",
+                            "width": "30%",
+                            "default": ""
+                        }
+                    ]
+                }
+            }
+        },
+        "tabControl": {
+            "type": "panel",
+            "label": "Control",
+            "items": {
+                "allowServiceControl": {
+                    "type": "checkbox",
+                    "label": "Allow starting, stopping and restarting services",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "allowPowerControl": {
+                    "type": "checkbox",
+                    "label": "Allow reboot and shutdown of the firewall",
+                    "help": "powerHelp",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                }
+            }
+        }
+    }
+}
