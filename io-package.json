@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "pfsense",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "news": {
       "0.1.1": {
         "en": "Published through CI with npm provenance; Dependabot configuration for dependency updates",
