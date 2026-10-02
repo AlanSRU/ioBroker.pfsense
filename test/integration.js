@@ -107,7 +107,7 @@ tests.integration(path.join(__dirname, '..'), {
                 const failedAt = mock.calls('GET', '/api/v2/status/gateways').length;
                 await waitFor(() => mock.calls('GET', '/api/v2/status/gateways').length > failedAt);
                 delete mock.handlers['GET /api/v2/status/gateways'];
-                mock.data['/api/v2/status/gateways'][0].delay = 9.5;
+                mock.data['/api/v2/status/gateways'].find(g => g.name === 'WAN_DHCP').delay = 9.5;
                 const st = await waitFor(async () => {
                     const s = await harness.states.getStateAsync('pfsense.0.gateways.WAN_DHCP.latency');
                     return s && s.val === 9.5 ? s : undefined;
