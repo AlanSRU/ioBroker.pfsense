@@ -208,6 +208,10 @@ the connection is back.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+- (ioBroker-Bot) Adapter requires admin >= 7.8.23 now.
+
 ### 0.1.1 (2026-10-02)
 
 - (Alan Paris) Published through CI with npm provenance; Dependabot configuration for dependency updates
