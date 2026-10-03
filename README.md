@@ -217,6 +217,8 @@ the connection is back.
 - (Alan Paris) Initial release: system, interfaces, gateways, services, DHCP/ARP host list and presence, OpenVPN,
   WireGuard, IPsec, CARP, firewall rules and aliases, Wake-on-LAN, optional reboot/shutdown
 
+[Older changelogs can be found there](CHANGELOG_OLD.md)
+
 ## License
 
 MIT License
