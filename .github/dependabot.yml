@@ -1,25 +1,30 @@
-version: 2
+# Dependabot configuration
+# Cooldown delays updating normal npm dependencies by 7 days but allows security updates to be processed immediately.
+# Note: Cooldown is not supported for the github-actions ecosystem.
+# Reference: https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference
+version: !!int '2'
 updates:
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 15
 
-  - package-ecosystem: npm
-    directory: /
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 15
-    # let new releases settle before they are proposed (supply-chain risk)
+      interval: 'weekly'
+    open-pull-requests-limit: !!int '15'
+
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: !!int '15'
     cooldown:
-      default-days: 7
+      default-days: !!int '7'
     ignore:
-      # @types/node follows the minimum supported Node.js version (engines >= 22), not the latest
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
-      # major updates of the toolchain need manual migration
-      - dependency-name: typescript
-        update-types: ["version-update:semver-major"]
-      - dependency-name: eslint
-        update-types: ["version-update:semver-major"]
+      - dependency-name: '@types/node'
+        update-types:
+          - 'version-update:semver-major'
+      - dependency-name: 'typescript'
+        update-types:
+          - 'version-update:semver-major'
+      - dependency-name: 'eslint'
+        update-types:
+          - 'version-update:semver-major'
